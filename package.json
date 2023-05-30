@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/node": "^18.0.6",
     "lodash": "^4.17.21",
+    "nearley": "^2.20.1",
     "node-fetch": "^3.2.6",
     "uuid": "^9.0.0"
   }
