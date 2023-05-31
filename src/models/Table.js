@@ -126,31 +126,38 @@ class Table{
   async beginTransaction(){
     //saving a copy of the current state of the table
     this.transactionActive=true;
-    await this.loadFromDisk();
+    try{
+      await this.loadFromDisk();
+    }catch(error){
+      console.error(`Failed to load data from disk: ${error}`);
+    }
   }
   //commit end the transaction
   async commit(){
     //end the transaction
     if(this.transactionActive){
       this.transactions.forEach(txn=>{
-        if(txn.type='insert'){
+        if(txn.type='insert' || txn.type==='update'){
           this.rows.set(txn.id, txn.data)
-        }else if(txn.type==='update'){
-          if(this.rows.has(txn.id)){
-            this.rows.set(txn.id, txn.data);
-          }
+        
         }else if(txn.type==='delete'){
-          if(this.rows.has(txn.id)){
+          
             this.rows.delete(txn.id)
-          }
+          
         }
       });
 
       // reset the txn state
       //save the txns to the disk
-      await this.saveToDisk();
       this.transactions=[];
       this.transactionActive=false;
+
+      try{
+        await this.saveToDisk();
+        
+      }catch(error){
+        console.error(`Failed to load data from disk: ${error}`);
+      }
     }
     
   }
@@ -166,24 +173,27 @@ class Table{
   //save a table to the disk
   async saveToDisk(){
     //serialize the data and save to a file
-    const rowsArray=Array.from(this.rows.entries());
+    if(this.rows.length>0){
+      const rowsArray=Array.from(this.rows.entries());
     const data=JSON.stringify(rowsArray);
     await fs.writeFile(this.filePath, data);
+    }
+    
   }
   //load data from the disk
   async loadFromDisk(){
-    try{
-      const data=await fs.readFile(this.filepath);
-      const rowsArray=JSON.parse(data);
-      this.rows=new Map(rowsArray);
-    }catch(error){
-      if(error.code==="ENOENT"){
-        //file doesnot exist yet
-        console.log('File doesnot exist yet')
-      }else{
-        throw error;
-      }
-    }
+   try {
+            const data = await fs.readFile(this.filePath);
+            if (data) {
+                const rowsArray = JSON.parse(data);
+                this.rows = new Map(rowsArray);
+            }
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                // Re-throw any other errors
+                throw error;
+            }
+        }
   }
 }
 
